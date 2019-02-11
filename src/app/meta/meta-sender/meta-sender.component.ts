@@ -65,10 +65,6 @@ export class MetaSenderComponent implements OnInit {
           const deployed = await this.StoreManagersContract.deployed();
           this.storeManagers = await deployed.getAll();
 
-          this.web3Service.detectChanges(async () => {
-            this.storeManagers = await deployed.getAll();
-          });
-
         }
       );
 
@@ -92,6 +88,9 @@ export class MetaSenderComponent implements OnInit {
     const deployed = await this.StoreManagersContract.deployed();
     this.isAdmin = await deployed.amITheOwner({ from: this.model.account });
 
+    this.web3Service.detectChanges(async () => {
+      this.storeManagers = await deployed.getAll();
+    });
   }
 
   setStatus(status) {
