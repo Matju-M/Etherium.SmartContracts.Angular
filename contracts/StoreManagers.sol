@@ -22,12 +22,11 @@ contract StoreManagers {
         return storeManagers;
     }
 
-    function add(address manager) restricted public payable returns (address[] memory){
+    function add(address manager) restricted public payable {
         storeManagers.push(manager);
-        return storeManagers;
     }
 
-    function remove(uint index) restricted public payable returns (address[] memory){
+    function remove(uint index) restricted public payable {
         delete storeManagers[index];
         if (index >= storeManagers.length) return storeManagers;
 
@@ -35,8 +34,6 @@ contract StoreManagers {
             storeManagers[i] = storeManagers[i+1];
         }
         storeManagers.length--;
-
-        return storeManagers;
     }
 
     function() external payable {

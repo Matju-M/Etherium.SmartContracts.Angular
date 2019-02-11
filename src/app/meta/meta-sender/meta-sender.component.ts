@@ -62,8 +62,16 @@ export class MetaSenderComponent implements OnInit {
       .then(
         async contract => {
           this.StoreManagersContract = contract;
+          const deployed = await this.StoreManagersContract.deployed();
+          this.storeManagers = await deployed.getAll();
+
+          this.web3Service.detectChanges(async () => {
+            this.storeManagers = await deployed.getAll();
+          });
+
         }
       );
+
     this.checkForOwner();
   }
 
@@ -83,7 +91,7 @@ export class MetaSenderComponent implements OnInit {
     }
     const deployed = await this.StoreManagersContract.deployed();
     this.isAdmin = await deployed.amITheOwner({ from: this.model.account });
-    this.storeManagers = await deployed.getAll();
+
   }
 
   setStatus(status) {
@@ -101,15 +109,15 @@ export class MetaSenderComponent implements OnInit {
     }
 
     const deployed = await this.StoreManagersContract.deployed();
-    this.storeManagers = await deployed.add(this.storeManagerAddress, { from: this.model.account });
+    await deployed.add(this.storeManagerAddress, { from: this.model.account });
   }
 
   async removeManager() {
     const index = _.indexOf(this.storeManagers, this.storeManagerAddress);
-
     const deployed = await this.StoreManagersContract.deployed();
+
     if (index > -1) {
-      this.storeManagers = await deployed.remove(index, { from: this.model.account });
+      await deployed.remove(index, { from: this.model.account });
     } else {
       console.log('No storemanager with the address found');
     }

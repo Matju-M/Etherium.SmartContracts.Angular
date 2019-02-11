@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as contract from 'truffle-contract';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 declare let require: any;
 const Web3 = require('web3');
 
@@ -48,6 +48,10 @@ export class Web3Service {
     contractAbstraction.setProvider(this.web3.currentProvider);
     return contractAbstraction;
 
+  }
+
+  public detectChanges(callback: Function): Subscription {
+    return this.web3.eth.subscribe('newBlockHeaders', callback);
   }
 
   private refreshAccounts() {
