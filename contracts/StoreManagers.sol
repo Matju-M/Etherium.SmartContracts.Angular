@@ -5,6 +5,7 @@ contract StoreManagers {
     address owner;
     
     address[] storeManagers;
+    mapping(address => bool) activeStoreManagers;
 
     constructor() public {
         owner = msg.sender;
@@ -14,21 +15,30 @@ contract StoreManagers {
         if (msg.sender == owner) _;
     }
 
-    function amITheOwner() public view returns (bool) {
+    function isOwner() public view returns (bool) {
         return msg.sender == owner;
     }
-    
+
+    function isActiveStoreManager(address storeManager) public view returns (bool){
+        bool selectedStoreManager = activeStoreManagers[storeManager];
+        return selectedStoreManager;
+    }
+
     function getAll() public view returns (address[] memory){
         return storeManagers;
     }
 
     function add(address manager) restricted public payable {
         storeManagers.push(manager);
+        activeStoreManagers[manager] = true;
     }
 
     function remove(uint index) restricted public payable {
+        address storeManagerAddress = storeManagers[index];
+        activeStoreManagers[storeManagerAddress] = false;
+
         delete storeManagers[index];
-        if (index >= storeManagers.length) return storeManagers;
+        if (index >= storeManagers.length) return;
 
         for (uint i = index; i < storeManagers.length-1; i++){
             storeManagers[i] = storeManagers[i+1];

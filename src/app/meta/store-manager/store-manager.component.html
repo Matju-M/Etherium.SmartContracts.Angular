@@ -1,0 +1,63 @@
+<div *ngIf="isStoreOwner">
+    <mat-card>
+        <mat-card-header>Add New Store</mat-card-header>
+        <mat-card-content>
+            <mat-form-field>
+                <input type="text" matInput placeholder="Code" [(ngModel)]="store.code">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="text" matInput placeholder="Image Url" [(ngModel)]="store.name">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="number" matInput placeholder="balance" [(ngModel)]="store.balance">
+            </mat-form-field>
+            <input type="checkbox" placeholder="active" placeholder="active" [(ngModel)]="store.active">
+            <button mat-button (click)="addStore()">Add</button>
+            <button mat-button (click)="updateStore()">Update</button>
+        </mat-card-content>
+    </mat-card>
+</div>
+<div>
+    <h3 *ngIf="storesList?.length">Stores list</h3>
+    <mat-grid-list cols="5" rowHeight="2:1">
+        <mat-grid-tile *ngFor="let store of storesList; trackBy: trackByCode" (click)="selectStore(store)"
+            [class.selected]="isStoreSelected(store.code)">
+            <img src='https://dummyimage.com/100x100/000/fff&text=store' />
+            <div>
+                <div>Code: {{store.code}}</div>
+                <div>Name: {{store.name}}</div>
+                <div>Balance: {{store.balance}} ETH</div>
+                <div>Active: {{store.active}}</div>
+            </div>
+        </mat-grid-tile>
+    </mat-grid-list>
+</div>
+<div *ngIf="isStoreOwner">
+    <mat-card>
+        <mat-card-header>Add item</mat-card-header>
+        <mat-card-content>
+            <mat-form-field>
+                <input type="text" matInput placeholder="Store Code" [(ngModel)]="storeItem.storeCode">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="text" matInput placeholder="Code" [(ngModel)]="storeItem.code">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="text" matInput placeholder="Image Url" [(ngModel)]="storeItem.image">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="text" matInput maxlength="33" placeholder="Label" [(ngModel)]="storeItem.title">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="number" matInput placeholder="price" [(ngModel)]="storeItem.price">
+            </mat-form-field>
+            <mat-form-field>
+                <input type="number" matInput placeholder="quantity" [(ngModel)]="storeItem.quantity">
+            </mat-form-field>
+            <input type="checkbox" placeholder="available" placeholder="available" [(ngModel)]="storeItem.available">
+            <button mat-button (click)="addItem()">Add</button>
+            <button mat-button (click)="updateItem()">Update</button>
+        </mat-card-content>
+
+    </mat-card>
+</div>

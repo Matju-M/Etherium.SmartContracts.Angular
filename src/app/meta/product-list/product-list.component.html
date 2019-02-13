@@ -1,0 +1,16 @@
+<h3>Product List</h3>
+<mat-grid-list cols="5" rowHeight="2:1">
+    <mat-grid-tile *ngFor="let items of storeItems; trackBy: trackByCode">
+        <img [src]="items.image">
+        <div>
+            <div>Code: {{items.code}}</div>
+            <div>Title: {{items.title}}</div>
+            <div>Price: {{items.price}} ETH</div>
+            <div>Quantity: {{items.quantity}}</div>
+            <div>Available: {{items.available}}</div>
+            <div *ngIf="!isStoreOwner">
+                <button (click)="buyItem(items.code, items.price)">Buy</button>
+            </div>
+        </div>
+    </mat-grid-tile>
+</mat-grid-list>

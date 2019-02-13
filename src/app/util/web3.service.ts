@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import * as contract from 'truffle-contract';
-import { Subject, Subscription } from 'rxjs';
-declare let require: any;
-const Web3 = require('web3');
+import contract from 'truffle-contract';
+import { Subject } from 'rxjs';
+
+import Web3 from 'web3';
+import { Unit } from 'web3/utils';
 
 declare let window: any;
 
@@ -37,6 +38,22 @@ export class Web3Service {
     setInterval(() => this.refreshAccounts(), 100);
   }
 
+  public getWeb3Provider(): Web3 {
+    return this.web3;
+  }
+
+  public toAscii(hex: string): string {
+    return this.getWeb3Provider().utils.toAscii(hex);
+  }
+
+  public toWei(value: string, unit: Unit): string {
+    return this.getWeb3Provider().utils.toWei(value, unit);
+  }
+
+  public fromWei(value: string, unit: Unit) {
+    return this.getWeb3Provider().utils.fromWei(value, unit);
+  }
+
   public async artifactsToContract(artifacts) {
     if (!this.web3) {
       const delay = new Promise(resolve => setTimeout(resolve, 100));
@@ -50,7 +67,13 @@ export class Web3Service {
 
   }
 
-  public detectChanges(callback: Function): Subscription {
+  public async detectChanges(callback: Function) {
+    if (!this.web3) {
+      const delay = new Promise(resolve => setTimeout(resolve, 100));
+      await delay;
+      return await this.detectChanges(callback);
+    }
+
     return this.web3.eth.subscribe('newBlockHeaders', callback);
   }
 

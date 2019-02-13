@@ -1,10 +1,9 @@
-var ConvertLib = artifacts.require("./ConvertLib.sol");
-var MetaCoin = artifacts.require("./MetaCoin.sol");
 var StoreManagers = artifacts.require("./StoreManagers.sol");
+var Stores = artifacts.require("./Stores.sol");
 
-module.exports = function(deployer) {
-  deployer.deploy(ConvertLib);
-  deployer.link(ConvertLib, MetaCoin);
-  deployer.deploy(MetaCoin);
-  deployer.deploy(StoreManagers);
-};
+module.exports = function (deployer) {
+  deployer.deploy(StoreManagers).then(function () {
+    return deployer.deploy(Stores, StoreManagers.address);
+  });
+
+}

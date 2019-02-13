@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MetaSenderComponent } from './meta-sender/meta-sender.component';
+
 import { UtilModule } from '../util/util.module';
 import { RouterModule } from '@angular/router';
 import {
@@ -8,13 +8,19 @@ import {
   MatCardModule,
   MatFormFieldModule,
   MatInputModule,
+  MatCheckboxModule,
   MatOptionModule,
   MatSelectModule,
   MatSnackBarModule,
-  MatListModule
+  MatListModule,
+  MatGridListModule
 } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
+
+import { StoreAdminComponent } from './store-admin/store-admin.component';
+import { ProductListComponent } from './product-list/product-list.component';
+import { StoreManagerComponent } from './store-manager/store-manager.component';
 
 @NgModule({
   imports: [
@@ -24,16 +30,26 @@ import { FormsModule } from '@angular/forms';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    MatCheckboxModule,
     MatOptionModule,
     MatSelectModule,
     MatSnackBarModule,
     RouterModule,
     UtilModule,
     MatListModule,
+    MatGridListModule,
     FormsModule
   ],
-  declarations: [MetaSenderComponent],
-  exports: [MetaSenderComponent]
+  declarations: [
+    StoreAdminComponent,
+    ProductListComponent,
+    StoreManagerComponent
+  ],
+  exports: [
+    StoreAdminComponent,
+    ProductListComponent,
+    StoreManagerComponent
+  ]
 })
 export class MetaModule {
 }

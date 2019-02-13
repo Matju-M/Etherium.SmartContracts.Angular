@@ -1,0 +1,15 @@
+<div *ngIf="isAdmin">
+    <mat-card>
+        <mat-card-header>Add Store Managers</mat-card-header>
+        <input type="text" matInput placeholder="Add new store manager" [(ngModel)]="storeManagerAddress" />
+
+        <button mat-button (click)="reloadManagers()">Refresh</button>
+        <button mat-button (click)="addManager()">Add</button>
+        <button mat-button (click)="removeManager()">Remove</button>
+        <mat-list>
+            <mat-list-item *ngFor="let manager of storeManagers; trackBy: trackById">
+                {{manager}}
+            </mat-list-item>
+        </mat-list>
+    </mat-card>
+</div>

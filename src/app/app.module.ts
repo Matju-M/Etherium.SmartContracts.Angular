@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 
 import { AppComponent } from './app.component';
-import {MetaModule} from './meta/meta.module';
+import { MetaModule } from './meta/meta.module';
 import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
@@ -15,6 +15,8 @@ import {
   MatToolbarModule,
   MatListModule
 } from '@angular/material';
+
+import { ProductService } from './util/product.service';
 
 @NgModule({
   declarations: [
@@ -34,7 +36,7 @@ import {
     MetaModule,
     MatListModule
   ],
-  providers: [],
+  providers: [ProductService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
