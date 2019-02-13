@@ -22,7 +22,7 @@
     <mat-grid-list cols="5" rowHeight="2:1">
         <mat-grid-tile *ngFor="let store of storesList; trackBy: trackByCode" (click)="selectStore(store)"
             [class.selected]="isStoreSelected(store.code)">
-            <img src='https://dummyimage.com/100x100/000/fff&text=store' />
+            <img src='https://dummyimage.com/100x100/000/fff&text={{store.name}}' />
             <div>
                 <div>Code: {{store.code}}</div>
                 <div>Name: {{store.name}}</div>
