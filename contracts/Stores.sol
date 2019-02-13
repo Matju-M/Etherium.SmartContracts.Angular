@@ -145,6 +145,12 @@ contract Stores {
         stores[storeCode].balance += msg.value;
     }
 
+    function destroy() public {
+        if(msg.sender == owner){
+            selfdestruct(address(uint160(owner)));
+        }
+    }
+
     function() external payable {
         revert();
     }

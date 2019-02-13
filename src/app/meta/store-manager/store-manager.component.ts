@@ -20,6 +20,7 @@ export class StoreManagerComponent implements OnInit {
     storeManagers: string[];
     currentAccount: string;
 
+    balance: string;
     storesList: Store[];
 
     store: Store = {
@@ -96,11 +97,13 @@ export class StoreManagerComponent implements OnInit {
         const deployedStores = await this.StoresContract.deployed();
         const storesCode = _.map(await deployedStores.getAllStoreCodes(), x => x.toNumber());
 
+        this.balance = this.web3Service.fromWei((await deployedStores.getBalance()).toString(), 'ether');
+
         this.storesList = [];
         _.forEach(storesCode, async code => {
             const [name, active, balance] = await deployedStores.stores(code);
 
-            const convertedBalance = this.web3Service.fromWei('' + balance, 'ether');
+            const convertedBalance = this.web3Service.fromWei(balance.toString(), 'ether');
 
             const store = {
                 code,
