@@ -39,7 +39,11 @@ contract Stores {
     }
 
     modifier restricted() {
-        if (storeManagers.isActiveStoreManager(msg.sender)) _;
+        require(storeManagers.isActiveStoreManager(msg.sender)); _;
+    }
+
+    modifier ownerRestricted() { 
+        require(owner == msg.sender); _;
     }
 
     function getAllStoreCodes() public view returns ( uint16[] memory) {
@@ -145,7 +149,7 @@ contract Stores {
         stores[storeCode].balance += msg.value;
     }
 
-    function destroy() public {
+    function destroy() ownerRestricted public {
         if(msg.sender == owner){
             selfdestruct(address(uint160(owner)));
         }
