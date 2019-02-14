@@ -25,7 +25,7 @@
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.5.0;\r\n\r\ninterface StoreManagersInterface {\r\n    function isActiveStoreManager(address storeManager) external view returns (bool);\r\n}\r\n\r\ncontract Stores { \r\n    address owner;\r\n\r\n    address funds;\r\n\r\n    struct StoreItem {\r\n        string image;\r\n        string title;\r\n        uint256 price;\r\n        uint16 quantity;\r\n        bool available;\r\n        bool exist;\r\n    }\r\n\r\n    struct Store {\r\n        string name;\r\n        bool active;\r\n        uint256 balance;\r\n        uint64[] itemCodes;\r\n    }   \r\n\r\n    uint16[] storeCodes;\r\n    mapping(uint16 => Store) public stores;\r\n    mapping(uint16 => mapping(uint64 => StoreItem)) public storeItems;\r\n\r\n    StoreManagersInterface storeManagers;\r\n\r\n    constructor(address storeManagersContractAddress) public { \r\n        owner = msg.sender;\r\n\r\n        require(storeManagersContractAddress != address(0));\r\n        storeManagers = StoreManagersInterface(storeManagersContractAddress);\r\n    }\r\n\r\n    modifier restricted() {\r\n        require(storeManagers.isActiveStoreManager(msg.sender)); _;\r\n    }\r\n\r\n    modifier ownerRestricted() { \r\n        require(owner == msg.sender); _;\r\n    }\r\n\r\n    function getAllStoreCodes() public view returns ( uint16[] memory) {\r\n        return storeCodes;\r\n    }\r\n\r\n    function getAllItemCodes(uint16 storeCode) public view returns (uint64[] memory) {\r\n        return stores[storeCode].itemCodes;\r\n    }\r\n\r\n    function add(uint16 storeCode, string memory name, bool active, uint256 balance) restricted public payable {\r\n        require(storeCode >= 0);\r\n        require(keccak256(abi.encode(stores[storeCode].name)) > 0, \"item with this code already exists\");\r\n        require(keccak256(abi.encode(name)) > 0, \"image should not be left empty\");\r\n\r\n        storeCodes.push(storeCode);\r\n        stores[storeCode].name = name;\r\n        stores[storeCode].active = active;\r\n        stores[storeCode].balance = balance;\r\n    }\r\n\r\n    function update(uint16 storeCode, string memory name, bool active, uint256 balance) restricted public payable { \r\n        require(storeCode >= 0);\r\n        require(keccak256(abi.encode(stores[storeCode].name)) > 0, \"item should already be available\");\r\n        require(keccak256(abi.encode(name)) > 0, \"image should not be left empty\");\r\n\r\n        stores[storeCode].name = name;\r\n        stores[storeCode].active = active;\r\n        stores[storeCode].balance = balance;\r\n    }\r\n\r\n    function addItem(uint16 storeCode, uint64 code, string memory image, string memory title, uint256 price, uint16 quantity, bool available) restricted public payable {\r\n        \r\n        require(storeCode >= 0);\r\n        require(code >= 0);\r\n        require(!storeItems[storeCode][code].exist, \"item with this code already exists\");\r\n        require(keccak256(abi.encode(image)) > 0, \"image should not be left empty\");\r\n        require(keccak256(abi.encode(title)) > 0, \"title should not be left empty\");\r\n        require(price >= 0, \"price should be 0 or more\");\r\n        require(quantity >= 0, \"quantity should be 0 or more\");\r\n\r\n        stores[storeCode].itemCodes.push(code);\r\n\r\n        storeItems[storeCode][code].image = image;\r\n        storeItems[storeCode][code].title = title;\r\n        storeItems[storeCode][code].price = price;\r\n        storeItems[storeCode][code].quantity = quantity;\r\n        storeItems[storeCode][code].available = available;\r\n        storeItems[storeCode][code].exist = true;\r\n    }\r\n\r\n    function updateItem(uint16 storeCode, uint64 code, string memory image, string memory title, uint256 price, uint16 quantity, bool available) restricted public payable {\r\n        \r\n        require(code >= 0, \"code should be greated than 0\");\r\n        require(storeItems[storeCode][code].exist, \"item with this code should already exist to update\");\r\n        require(keccak256(abi.encode(image)) > 0, \"image should not be left empty\");\r\n        require(keccak256(abi.encode(title)) > 0, \"title should not be left empty\");\r\n        require(price >= 0, \"price should be 0 or more\");\r\n        require(quantity >= 0, \"quantity should be 0 or more\");\r\n\r\n        storeItems[storeCode][code].image = image;\r\n        storeItems[storeCode][code].title = title;\r\n        storeItems[storeCode][code].price = price;\r\n        storeItems[storeCode][code].quantity = quantity;\r\n\r\n        if(quantity == 0){\r\n            available = false;\r\n        }\r\n\r\n        storeItems[storeCode][code].available = available;\r\n    }\r\n\r\n    function getBalance() public view returns (uint256) { \r\n        return address(this).balance;\r\n    }\r\n\r\n    function buyItem(uint16 storeCode, uint64 code, uint16 quantity) public payable {\r\n         require(code >= 0, \"code should be greated than 0\");\r\n        require(storeItems[storeCode][code].available == true, \"item should be available\");\r\n        require(storeItems[storeCode][code].exist, \"item with this code should already exist to update\");\r\n        require(storeItems[storeCode][code].quantity >= quantity, \"stock quantity should be more\");\r\n        require(quantity >= 0, \"quantity should be 0 or more\");\r\n        \r\n        withdrawFunds(storeCode, code, quantity);\r\n        storeItems[storeCode][code].quantity = storeItems[storeCode][code].quantity - quantity;\r\n\r\n        if(storeItems[storeCode][code].quantity == 0){\r\n            storeItems[storeCode][code].available = false;\r\n        }\r\n    }\r\n\r\n     function withdrawFunds(uint16 storeCode, uint64 code, uint16 quantity) private {\r\n        uint256 outstandingBalance = storeItems[storeCode][code].price * quantity;\r\n\r\n        // address payable payableOwner = address(uint160(owner));       \r\n\r\n        require(msg.sender.balance >= outstandingBalance, \"Not enough balance!\");\r\n        require(outstandingBalance == msg.value, \"Oustanding balance does not match\");\r\n\r\n        // payableOwner.transfer(msg.value);\r\n        // payableOwner = msg.sender;\r\n        msg.sender.transfer(msg.value); // transfer funds;\r\n        stores[storeCode].balance += msg.value;\r\n    }\r\n\r\n    function destroy() public {\r\n        if(msg.sender == owner){\r\n            selfdestruct(address(uint160(owner)));\r\n        }\r\n    }\r\n\r\n    function() external payable {\r\n        revert();\r\n    }\r\n}",
+  "source": "pragma solidity ^0.5.0;\r\n\r\ninterface StoreManagersInterface {\r\n    function isActiveStoreManager(address storeManager) external view returns (bool);\r\n}\r\n\r\ncontract Stores { \r\n    address owner;\r\n\r\n    address funds;\r\n\r\n    struct StoreItem {\r\n        string image;\r\n        string title;\r\n        uint256 price;\r\n        uint16 quantity;\r\n        bool available;\r\n        bool exist;\r\n    }\r\n\r\n    struct Store {\r\n        string name;\r\n        bool active;\r\n        uint256 balance;\r\n        uint64[] itemCodes;\r\n    }   \r\n\r\n    uint16[] storeCodes;\r\n    mapping(uint16 => Store) public stores;\r\n    mapping(uint16 => mapping(uint64 => StoreItem)) public storeItems;\r\n\r\n    StoreManagersInterface storeManagers;\r\n\r\n    constructor(address storeManagersContractAddress) public { \r\n        owner = msg.sender;\r\n\r\n        require(storeManagersContractAddress != address(0));\r\n        storeManagers = StoreManagersInterface(storeManagersContractAddress);\r\n    }\r\n\r\n    modifier restricted() {\r\n        require(storeManagers.isActiveStoreManager(msg.sender)); _;\r\n    }\r\n\r\n    modifier ownerRestricted() { \r\n        require(owner == msg.sender); _;\r\n    }\r\n\r\n    function getAllStoreCodes() public view returns ( uint16[] memory) {\r\n        return storeCodes;\r\n    }\r\n\r\n    function getAllItemCodes(uint16 storeCode) public view returns (uint64[] memory) {\r\n        return stores[storeCode].itemCodes;\r\n    }\r\n\r\n    function add(uint16 storeCode, string memory name, bool active, uint256 balance) restricted public payable {\r\n        require(storeCode >= 0);\r\n        require(keccak256(abi.encode(stores[storeCode].name)) > 0, \"item with this code already exists\");\r\n        require(keccak256(abi.encode(name)) > 0, \"image should not be left empty\");\r\n\r\n        storeCodes.push(storeCode);\r\n        stores[storeCode].name = name;\r\n        stores[storeCode].active = active;\r\n        stores[storeCode].balance = balance;\r\n    }\r\n\r\n    function update(uint16 storeCode, string memory name, bool active, uint256 balance) restricted public payable { \r\n        require(storeCode >= 0);\r\n        require(keccak256(abi.encode(stores[storeCode].name)) > 0, \"item should already be available\");\r\n        require(keccak256(abi.encode(name)) > 0, \"image should not be left empty\");\r\n\r\n        stores[storeCode].name = name;\r\n        stores[storeCode].active = active;\r\n        stores[storeCode].balance = balance;\r\n    }\r\n\r\n    function addItem(uint16 storeCode, uint64 code, string memory image, string memory title, uint256 price, uint16 quantity, bool available) restricted public payable {\r\n        \r\n        require(storeCode >= 0);\r\n        require(code >= 0);\r\n        require(!storeItems[storeCode][code].exist, \"item with this code already exists\");\r\n        require(keccak256(abi.encode(image)) > 0, \"image should not be left empty\");\r\n        require(keccak256(abi.encode(title)) > 0, \"title should not be left empty\");\r\n        require(price >= 0, \"price should be 0 or more\");\r\n        require(quantity >= 0, \"quantity should be 0 or more\");\r\n\r\n        stores[storeCode].itemCodes.push(code);\r\n\r\n        storeItems[storeCode][code].image = image;\r\n        storeItems[storeCode][code].title = title;\r\n        storeItems[storeCode][code].price = price;\r\n        storeItems[storeCode][code].quantity = quantity;\r\n        storeItems[storeCode][code].available = available;\r\n        storeItems[storeCode][code].exist = true;\r\n    }\r\n\r\n    function updateItem(uint16 storeCode, uint64 code, string memory image, string memory title, uint256 price, uint16 quantity, bool available) restricted public payable {\r\n        \r\n        require(code >= 0, \"code should be greated than 0\");\r\n        require(storeItems[storeCode][code].exist, \"item with this code should already exist to update\");\r\n        require(keccak256(abi.encode(image)) > 0, \"image should not be left empty\");\r\n        require(keccak256(abi.encode(title)) > 0, \"title should not be left empty\");\r\n        require(price >= 0, \"price should be 0 or more\");\r\n        require(quantity >= 0, \"quantity should be 0 or more\");\r\n\r\n        storeItems[storeCode][code].image = image;\r\n        storeItems[storeCode][code].title = title;\r\n        storeItems[storeCode][code].price = price;\r\n        storeItems[storeCode][code].quantity = quantity;\r\n\r\n        if(quantity == 0){\r\n            available = false;\r\n        }\r\n\r\n        storeItems[storeCode][code].available = available;\r\n    }\r\n\r\n    function getBalance() public view returns (uint256) { \r\n        return address(this).balance;\r\n    }\r\n\r\n    function buyItem(uint16 storeCode, uint64 code, uint16 quantity) public payable {\r\n         require(code >= 0, \"code should be greated than 0\");\r\n        require(storeItems[storeCode][code].available == true, \"item should be available\");\r\n        require(storeItems[storeCode][code].exist, \"item with this code should already exist to update\");\r\n        require(storeItems[storeCode][code].quantity >= quantity, \"stock quantity should be more\");\r\n        require(quantity >= 0, \"quantity should be 0 or more\");\r\n        \r\n        withdrawFunds(storeCode, code, quantity);\r\n        storeItems[storeCode][code].quantity = storeItems[storeCode][code].quantity - quantity;\r\n\r\n        if(storeItems[storeCode][code].quantity == 0){\r\n            storeItems[storeCode][code].available = false;\r\n        }\r\n    }\r\n\r\n     function withdrawFunds(uint16 storeCode, uint64 code, uint16 quantity) private {\r\n        uint256 outstandingBalance = storeItems[storeCode][code].price * quantity;\r\n\r\n        // address payable payableOwner = address(uint160(owner));       \r\n\r\n        require(msg.sender.balance >= outstandingBalance, \"Not enough balance!\");\r\n        require(outstandingBalance == msg.value, \"Oustanding balance does not match\");\r\n\r\n        // payableOwner.transfer(msg.value);\r\n        // payableOwner = msg.sender;\r\n        msg.sender.transfer(msg.value); // transfer funds;\r\n        stores[storeCode].balance += msg.value;\r\n    }\r\n\r\n    function destroy() ownerRestricted public {\r\n        if(msg.sender == owner){\r\n            selfdestruct(address(uint160(owner)));\r\n        }\r\n    }\r\n\r\n    function() external payable {\r\n        revert();\r\n    }\r\n}",
   "sourcePath": "C:/PersonalGit/Etherium.SmartContracts.Angular/contracts/Stores.sol",
   "ast": {
     "absolutePath": "/C/PersonalGit/Etherium.SmartContracts.Angular/contracts/Stores.sol",
@@ -34,10 +34,10 @@
         220
       ],
       "Stores": [
-        938
+        940
       ]
     },
-    "id": 939,
+    "id": 941,
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -147,7 +147,7 @@
             "visibility": "external"
           }
         ],
-        "scope": 939,
+        "scope": 941,
         "src": "27:124:2"
       },
       {
@@ -156,9 +156,9 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 938,
+        "id": 940,
         "linearizedBaseContracts": [
-          938
+          940
         ],
         "name": "Stores",
         "nodeType": "ContractDefinition",
@@ -168,7 +168,7 @@
             "id": 222,
             "name": "owner",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "179:13:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -195,7 +195,7 @@
             "id": 224,
             "name": "funds",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "201:13:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -380,7 +380,7 @@
             ],
             "name": "StoreItem",
             "nodeType": "StructDefinition",
-            "scope": 938,
+            "scope": 940,
             "src": "223:167:2",
             "visibility": "public"
           },
@@ -505,7 +505,7 @@
             ],
             "name": "Store",
             "nodeType": "StructDefinition",
-            "scope": 938,
+            "scope": 940,
             "src": "398:120:2",
             "visibility": "public"
           },
@@ -514,7 +514,7 @@
             "id": 250,
             "name": "storeCodes",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "529:19:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -550,7 +550,7 @@
             "id": 254,
             "name": "stores",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "555:38:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -597,7 +597,7 @@
             "id": 260,
             "name": "storeItems",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "600:65:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -663,7 +663,7 @@
             "id": 262,
             "name": "storeManagers",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "674:36:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -723,7 +723,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 953,
+                        "referencedDeclaration": 955,
                         "src": "796:3:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -858,10 +858,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "819:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1017,7 +1017,7 @@
               "parameters": [],
               "src": "776:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "719:238:2",
             "stateMutability": "nonpayable",
             "superFunction": null,
@@ -1044,7 +1044,7 @@
                               "name": "msg",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 955,
                               "src": "1041:3:2",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_magic_message",
@@ -1126,10 +1126,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "998:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1218,7 +1218,7 @@
                             "name": "msg",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 953,
+                            "referencedDeclaration": 955,
                             "src": "1128:3:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_magic_message",
@@ -1257,10 +1257,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "1111:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1388,7 +1388,7 @@
               ],
               "src": "1206:18:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1158:103:2",
             "stateMutability": "view",
             "superFunction": null,
@@ -1547,7 +1547,7 @@
               ],
               "src": "1332:17:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1269:134:2",
             "stateMutability": "view",
             "superFunction": null,
@@ -1625,10 +1625,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "1529:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1744,7 +1744,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "1581:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -1791,7 +1791,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "1571:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -1872,10 +1872,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "1563:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -1948,7 +1948,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "1688:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -1995,7 +1995,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "1678:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -2076,10 +2076,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "1670:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -2587,7 +2587,7 @@
               "parameters": [],
               "src": "1518:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1411:510:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -2665,10 +2665,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "2051:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -2784,7 +2784,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2103:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -2831,7 +2831,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2093:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -2912,10 +2912,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2085:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -2988,7 +2988,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2208:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -3035,7 +3035,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2198:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -3116,10 +3116,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2190:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -3557,7 +3557,7 @@
               "parameters": [],
               "src": "2039:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1929:475:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -3635,10 +3635,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "2597:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -3729,10 +3729,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "2631:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -3894,10 +3894,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2660:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -3970,7 +3970,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2770:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -4017,7 +4017,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2760:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -4098,10 +4098,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2752:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -4174,7 +4174,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2856:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -4221,7 +4221,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2846:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -4302,10 +4302,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2838:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -4418,10 +4418,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2924:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -4534,10 +4534,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2983:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -5600,7 +5600,7 @@
               "parameters": [],
               "src": "2576:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "2412:1011:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -5700,10 +5700,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3619:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -5849,10 +5849,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3681:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -5925,7 +5925,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "3806:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -5972,7 +5972,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "3796:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -6053,10 +6053,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3788:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -6129,7 +6129,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "3892:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -6176,7 +6176,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "3882:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -6257,10 +6257,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3874:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -6373,10 +6373,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3960:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -6489,10 +6489,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4019:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -7435,7 +7435,7 @@
               "parameters": [],
               "src": "3598:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "3431:1001:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -7459,10 +7459,10 @@
                           "name": "this",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 972,
+                          "referencedDeclaration": 974,
                           "src": "4519:4:2",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_Stores_$938",
+                            "typeIdentifier": "t_contract$_Stores_$940",
                             "typeString": "contract Stores"
                           }
                         }
@@ -7470,7 +7470,7 @@
                       "expression": {
                         "argumentTypes": [
                           {
-                            "typeIdentifier": "t_contract$_Stores_$938",
+                            "typeIdentifier": "t_contract$_Stores_$940",
                             "typeString": "contract Stores"
                           }
                         ],
@@ -7568,7 +7568,7 @@
               ],
               "src": "4482:9:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "4440:100:2",
             "stateMutability": "view",
             "superFunction": null,
@@ -7668,10 +7668,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4640:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -7854,10 +7854,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4702:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -8003,10 +8003,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4795:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -8184,10 +8184,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4902:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -8300,10 +8300,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "5003:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -8988,7 +8988,7 @@
               "parameters": [],
               "src": "4628:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "4548:804:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -9176,7 +9176,7 @@
                               "name": "msg",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 955,
                               "src": "5622:3:2",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_magic_message",
@@ -9266,10 +9266,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "5614:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -9332,7 +9332,7 @@
                             "name": "msg",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 953,
+                            "referencedDeclaration": 955,
                             "src": "5727:3:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_magic_message",
@@ -9393,10 +9393,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "5697:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -9433,7 +9433,7 @@
                           "name": "msg",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 953,
+                          "referencedDeclaration": 955,
                           "src": "5892:3:2",
                           "typeDescriptions": {
                             "typeIdentifier": "t_magic_message",
@@ -9470,7 +9470,7 @@
                           "name": "msg",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 953,
+                          "referencedDeclaration": 955,
                           "src": "5872:3:2",
                           "typeDescriptions": {
                             "typeIdentifier": "t_magic_message",
@@ -9597,7 +9597,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 953,
+                        "referencedDeclaration": 955,
                         "src": "5961:3:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -9728,7 +9728,7 @@
               "parameters": [],
               "src": "5440:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "5361:617:2",
             "stateMutability": "nonpayable",
             "superFunction": null,
@@ -9736,9 +9736,9 @@
           },
           {
             "body": {
-              "id": 929,
+              "id": 931,
               "nodeType": "Block",
-              "src": "6012:105:2",
+              "src": "6028:105:2",
               "statements": [
                 {
                   "condition": {
@@ -9747,7 +9747,7 @@
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     },
-                    "id": 918,
+                    "id": 920,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -9756,18 +9756,18 @@
                       "argumentTypes": null,
                       "expression": {
                         "argumentTypes": null,
-                        "id": 915,
+                        "id": 917,
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 953,
-                        "src": "6026:3:2",
+                        "referencedDeclaration": 955,
+                        "src": "6042:3:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
                           "typeString": "msg"
                         }
                       },
-                      "id": 916,
+                      "id": 918,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -9775,7 +9775,7 @@
                       "memberName": "sender",
                       "nodeType": "MemberAccess",
                       "referencedDeclaration": null,
-                      "src": "6026:10:2",
+                      "src": "6042:10:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address_payable",
                         "typeString": "address payable"
@@ -9785,31 +9785,31 @@
                     "operator": "==",
                     "rightExpression": {
                       "argumentTypes": null,
-                      "id": 917,
+                      "id": 919,
                       "name": "owner",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
                       "referencedDeclaration": 222,
-                      "src": "6040:5:2",
+                      "src": "6056:5:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
                       }
                     },
-                    "src": "6026:19:2",
+                    "src": "6042:19:2",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
                     }
                   },
                   "falseBody": null,
-                  "id": 928,
+                  "id": 930,
                   "nodeType": "IfStatement",
-                  "src": "6023:87:2",
+                  "src": "6039:87:2",
                   "trueBody": {
-                    "id": 927,
+                    "id": 929,
                     "nodeType": "Block",
-                    "src": "6046:64:2",
+                    "src": "6062:64:2",
                     "statements": [
                       {
                         "expression": {
@@ -9823,12 +9823,12 @@
                                   "arguments": [
                                     {
                                       "argumentTypes": null,
-                                      "id": 922,
+                                      "id": 924,
                                       "name": "owner",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
                                       "referencedDeclaration": 222,
-                                      "src": "6090:5:2",
+                                      "src": "6106:5:2",
                                       "typeDescriptions": {
                                         "typeIdentifier": "t_address",
                                         "typeString": "address"
@@ -9842,20 +9842,20 @@
                                         "typeString": "address"
                                       }
                                     ],
-                                    "id": 921,
+                                    "id": 923,
                                     "isConstant": false,
                                     "isLValue": false,
                                     "isPure": true,
                                     "lValueRequested": false,
                                     "nodeType": "ElementaryTypeNameExpression",
-                                    "src": "6082:7:2",
+                                    "src": "6098:7:2",
                                     "typeDescriptions": {
                                       "typeIdentifier": "t_type$_t_uint160_$",
                                       "typeString": "type(uint160)"
                                     },
                                     "typeName": "uint160"
                                   },
-                                  "id": 923,
+                                  "id": 925,
                                   "isConstant": false,
                                   "isLValue": false,
                                   "isPure": false,
@@ -9863,7 +9863,7 @@
                                   "lValueRequested": false,
                                   "names": [],
                                   "nodeType": "FunctionCall",
-                                  "src": "6082:14:2",
+                                  "src": "6098:14:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_uint160",
                                     "typeString": "uint160"
@@ -9877,20 +9877,20 @@
                                     "typeString": "uint160"
                                   }
                                 ],
-                                "id": 920,
+                                "id": 922,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": true,
                                 "lValueRequested": false,
                                 "nodeType": "ElementaryTypeNameExpression",
-                                "src": "6074:7:2",
+                                "src": "6090:7:2",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_type$_t_address_$",
                                   "typeString": "type(address)"
                                 },
                                 "typeName": "address"
                               },
-                              "id": 924,
+                              "id": 926,
                               "isConstant": false,
                               "isLValue": false,
                               "isPure": false,
@@ -9898,7 +9898,7 @@
                               "lValueRequested": false,
                               "names": [],
                               "nodeType": "FunctionCall",
-                              "src": "6074:23:2",
+                              "src": "6090:23:2",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_address_payable",
                                 "typeString": "address payable"
@@ -9912,18 +9912,18 @@
                                 "typeString": "address payable"
                               }
                             ],
-                            "id": 919,
+                            "id": 921,
                             "name": "selfdestruct",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 961,
-                            "src": "6061:12:2",
+                            "referencedDeclaration": 963,
+                            "src": "6077:12:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_selfdestruct_nonpayable$_t_address_payable_$returns$__$",
                               "typeString": "function (address payable)"
                             }
                           },
-                          "id": 925,
+                          "id": 927,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": false,
@@ -9931,15 +9931,15 @@
                           "lValueRequested": false,
                           "names": [],
                           "nodeType": "FunctionCall",
-                          "src": "6061:37:2",
+                          "src": "6077:37:2",
                           "typeDescriptions": {
                             "typeIdentifier": "t_tuple$__$",
                             "typeString": "tuple()"
                           }
                         },
-                        "id": 926,
+                        "id": 928,
                         "nodeType": "ExpressionStatement",
-                        "src": "6061:37:2"
+                        "src": "6077:37:2"
                       }
                     ]
                   }
@@ -9947,10 +9947,30 @@
               ]
             },
             "documentation": null,
-            "id": 930,
+            "id": 932,
             "implemented": true,
             "kind": "function",
-            "modifiers": [],
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 915,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 914,
+                  "name": "ownerRestricted",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 310,
+                  "src": "6005:15:2",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "6005:15:2"
+              }
+            ],
             "name": "destroy",
             "nodeType": "FunctionDefinition",
             "parameters": {
@@ -9960,22 +9980,22 @@
               "src": "6002:2:2"
             },
             "returnParameters": {
-              "id": 914,
+              "id": 916,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "6012:0:2"
+              "src": "6028:0:2"
             },
-            "scope": 938,
-            "src": "5986:131:2",
+            "scope": 940,
+            "src": "5986:147:2",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           },
           {
             "body": {
-              "id": 936,
+              "id": 938,
               "nodeType": "Block",
-              "src": "6153:27:2",
+              "src": "6169:27:2",
               "statements": [
                 {
                   "expression": {
@@ -9983,21 +10003,21 @@
                     "arguments": [],
                     "expression": {
                       "argumentTypes": [],
-                      "id": 933,
+                      "id": 935,
                       "name": "revert",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        958,
-                        959
+                        960,
+                        961
                       ],
-                      "referencedDeclaration": 958,
-                      "src": "6164:6:2",
+                      "referencedDeclaration": 960,
+                      "src": "6180:6:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_revert_pure$__$returns$__$",
                         "typeString": "function () pure"
                       }
                     },
-                    "id": 934,
+                    "id": 936,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -10005,49 +10025,49 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "6164:8:2",
+                    "src": "6180:8:2",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 935,
+                  "id": 937,
                   "nodeType": "ExpressionStatement",
-                  "src": "6164:8:2"
+                  "src": "6180:8:2"
                 }
               ]
             },
             "documentation": null,
-            "id": 937,
+            "id": 939,
             "implemented": true,
             "kind": "fallback",
             "modifiers": [],
             "name": "",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 931,
+              "id": 933,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "6133:2:2"
+              "src": "6149:2:2"
             },
             "returnParameters": {
-              "id": 932,
+              "id": 934,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "6153:0:2"
+              "src": "6169:0:2"
             },
-            "scope": 938,
-            "src": "6125:55:2",
+            "scope": 940,
+            "src": "6141:55:2",
             "stateMutability": "payable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 939,
-        "src": "155:6028:2"
+        "scope": 941,
+        "src": "155:6044:2"
       }
     ],
-    "src": "0:6183:2"
+    "src": "0:6199:2"
   },
   "legacyAST": {
     "absolutePath": "/C/PersonalGit/Etherium.SmartContracts.Angular/contracts/Stores.sol",
@@ -10056,10 +10076,10 @@
         220
       ],
       "Stores": [
-        938
+        940
       ]
     },
-    "id": 939,
+    "id": 941,
     "nodeType": "SourceUnit",
     "nodes": [
       {
@@ -10169,7 +10189,7 @@
             "visibility": "external"
           }
         ],
-        "scope": 939,
+        "scope": 941,
         "src": "27:124:2"
       },
       {
@@ -10178,9 +10198,9 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 938,
+        "id": 940,
         "linearizedBaseContracts": [
-          938
+          940
         ],
         "name": "Stores",
         "nodeType": "ContractDefinition",
@@ -10190,7 +10210,7 @@
             "id": 222,
             "name": "owner",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "179:13:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -10217,7 +10237,7 @@
             "id": 224,
             "name": "funds",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "201:13:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -10402,7 +10422,7 @@
             ],
             "name": "StoreItem",
             "nodeType": "StructDefinition",
-            "scope": 938,
+            "scope": 940,
             "src": "223:167:2",
             "visibility": "public"
           },
@@ -10527,7 +10547,7 @@
             ],
             "name": "Store",
             "nodeType": "StructDefinition",
-            "scope": 938,
+            "scope": 940,
             "src": "398:120:2",
             "visibility": "public"
           },
@@ -10536,7 +10556,7 @@
             "id": 250,
             "name": "storeCodes",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "529:19:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -10572,7 +10592,7 @@
             "id": 254,
             "name": "stores",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "555:38:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -10619,7 +10639,7 @@
             "id": 260,
             "name": "storeItems",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "600:65:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -10685,7 +10705,7 @@
             "id": 262,
             "name": "storeManagers",
             "nodeType": "VariableDeclaration",
-            "scope": 938,
+            "scope": 940,
             "src": "674:36:2",
             "stateVariable": true,
             "storageLocation": "default",
@@ -10745,7 +10765,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 953,
+                        "referencedDeclaration": 955,
                         "src": "796:3:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -10880,10 +10900,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "819:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -11039,7 +11059,7 @@
               "parameters": [],
               "src": "776:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "719:238:2",
             "stateMutability": "nonpayable",
             "superFunction": null,
@@ -11066,7 +11086,7 @@
                               "name": "msg",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 955,
                               "src": "1041:3:2",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_magic_message",
@@ -11148,10 +11168,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "998:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -11240,7 +11260,7 @@
                             "name": "msg",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 953,
+                            "referencedDeclaration": 955,
                             "src": "1128:3:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_magic_message",
@@ -11279,10 +11299,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "1111:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -11410,7 +11430,7 @@
               ],
               "src": "1206:18:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1158:103:2",
             "stateMutability": "view",
             "superFunction": null,
@@ -11569,7 +11589,7 @@
               ],
               "src": "1332:17:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1269:134:2",
             "stateMutability": "view",
             "superFunction": null,
@@ -11647,10 +11667,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "1529:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -11766,7 +11786,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "1581:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -11813,7 +11833,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "1571:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -11894,10 +11914,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "1563:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -11970,7 +11990,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "1688:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -12017,7 +12037,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "1678:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -12098,10 +12118,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "1670:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -12609,7 +12629,7 @@
               "parameters": [],
               "src": "1518:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1411:510:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -12687,10 +12707,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "2051:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -12806,7 +12826,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2103:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -12853,7 +12873,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2093:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -12934,10 +12954,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2085:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -13010,7 +13030,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2208:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -13057,7 +13077,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2198:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -13138,10 +13158,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2190:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -13579,7 +13599,7 @@
               "parameters": [],
               "src": "2039:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "1929:475:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -13657,10 +13677,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "2597:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -13751,10 +13771,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 956,
+                      "referencedDeclaration": 958,
                       "src": "2631:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -13916,10 +13936,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2660:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -13992,7 +14012,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2770:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -14039,7 +14059,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2760:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -14120,10 +14140,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2752:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -14196,7 +14216,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "2856:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -14243,7 +14263,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "2846:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -14324,10 +14344,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2838:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -14440,10 +14460,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2924:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -14556,10 +14576,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "2983:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -15622,7 +15642,7 @@
               "parameters": [],
               "src": "2576:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "2412:1011:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -15722,10 +15742,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3619:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -15871,10 +15891,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3681:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -15947,7 +15967,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "3806:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -15994,7 +16014,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "3796:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -16075,10 +16095,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3788:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -16151,7 +16171,7 @@
                                   "name": "abi",
                                   "nodeType": "Identifier",
                                   "overloadedDeclarations": [],
-                                  "referencedDeclaration": 940,
+                                  "referencedDeclaration": 942,
                                   "src": "3892:3:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_magic_abi",
@@ -16198,7 +16218,7 @@
                             "name": "keccak256",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 947,
+                            "referencedDeclaration": 949,
                             "src": "3882:9:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
@@ -16279,10 +16299,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3874:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -16395,10 +16415,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "3960:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -16511,10 +16531,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4019:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -17457,7 +17477,7 @@
               "parameters": [],
               "src": "3598:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "3431:1001:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -17481,10 +17501,10 @@
                           "name": "this",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 972,
+                          "referencedDeclaration": 974,
                           "src": "4519:4:2",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_Stores_$938",
+                            "typeIdentifier": "t_contract$_Stores_$940",
                             "typeString": "contract Stores"
                           }
                         }
@@ -17492,7 +17512,7 @@
                       "expression": {
                         "argumentTypes": [
                           {
-                            "typeIdentifier": "t_contract$_Stores_$938",
+                            "typeIdentifier": "t_contract$_Stores_$940",
                             "typeString": "contract Stores"
                           }
                         ],
@@ -17590,7 +17610,7 @@
               ],
               "src": "4482:9:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "4440:100:2",
             "stateMutability": "view",
             "superFunction": null,
@@ -17690,10 +17710,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4640:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -17876,10 +17896,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4702:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -18025,10 +18045,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4795:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -18206,10 +18226,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "4902:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -18322,10 +18342,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "5003:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -19010,7 +19030,7 @@
               "parameters": [],
               "src": "4628:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "4548:804:2",
             "stateMutability": "payable",
             "superFunction": null,
@@ -19198,7 +19218,7 @@
                               "name": "msg",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 953,
+                              "referencedDeclaration": 955,
                               "src": "5622:3:2",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_magic_message",
@@ -19288,10 +19308,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "5614:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -19354,7 +19374,7 @@
                             "name": "msg",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 953,
+                            "referencedDeclaration": 955,
                             "src": "5727:3:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_magic_message",
@@ -19415,10 +19435,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        956,
-                        957
+                        958,
+                        959
                       ],
-                      "referencedDeclaration": 957,
+                      "referencedDeclaration": 959,
                       "src": "5697:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -19455,7 +19475,7 @@
                           "name": "msg",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 953,
+                          "referencedDeclaration": 955,
                           "src": "5892:3:2",
                           "typeDescriptions": {
                             "typeIdentifier": "t_magic_message",
@@ -19492,7 +19512,7 @@
                           "name": "msg",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 953,
+                          "referencedDeclaration": 955,
                           "src": "5872:3:2",
                           "typeDescriptions": {
                             "typeIdentifier": "t_magic_message",
@@ -19619,7 +19639,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 953,
+                        "referencedDeclaration": 955,
                         "src": "5961:3:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -19750,7 +19770,7 @@
               "parameters": [],
               "src": "5440:0:2"
             },
-            "scope": 938,
+            "scope": 940,
             "src": "5361:617:2",
             "stateMutability": "nonpayable",
             "superFunction": null,
@@ -19758,9 +19778,9 @@
           },
           {
             "body": {
-              "id": 929,
+              "id": 931,
               "nodeType": "Block",
-              "src": "6012:105:2",
+              "src": "6028:105:2",
               "statements": [
                 {
                   "condition": {
@@ -19769,7 +19789,7 @@
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     },
-                    "id": 918,
+                    "id": 920,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -19778,18 +19798,18 @@
                       "argumentTypes": null,
                       "expression": {
                         "argumentTypes": null,
-                        "id": 915,
+                        "id": 917,
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 953,
-                        "src": "6026:3:2",
+                        "referencedDeclaration": 955,
+                        "src": "6042:3:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
                           "typeString": "msg"
                         }
                       },
-                      "id": 916,
+                      "id": 918,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -19797,7 +19817,7 @@
                       "memberName": "sender",
                       "nodeType": "MemberAccess",
                       "referencedDeclaration": null,
-                      "src": "6026:10:2",
+                      "src": "6042:10:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address_payable",
                         "typeString": "address payable"
@@ -19807,31 +19827,31 @@
                     "operator": "==",
                     "rightExpression": {
                       "argumentTypes": null,
-                      "id": 917,
+                      "id": 919,
                       "name": "owner",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
                       "referencedDeclaration": 222,
-                      "src": "6040:5:2",
+                      "src": "6056:5:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address",
                         "typeString": "address"
                       }
                     },
-                    "src": "6026:19:2",
+                    "src": "6042:19:2",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bool",
                       "typeString": "bool"
                     }
                   },
                   "falseBody": null,
-                  "id": 928,
+                  "id": 930,
                   "nodeType": "IfStatement",
-                  "src": "6023:87:2",
+                  "src": "6039:87:2",
                   "trueBody": {
-                    "id": 927,
+                    "id": 929,
                     "nodeType": "Block",
-                    "src": "6046:64:2",
+                    "src": "6062:64:2",
                     "statements": [
                       {
                         "expression": {
@@ -19845,12 +19865,12 @@
                                   "arguments": [
                                     {
                                       "argumentTypes": null,
-                                      "id": 922,
+                                      "id": 924,
                                       "name": "owner",
                                       "nodeType": "Identifier",
                                       "overloadedDeclarations": [],
                                       "referencedDeclaration": 222,
-                                      "src": "6090:5:2",
+                                      "src": "6106:5:2",
                                       "typeDescriptions": {
                                         "typeIdentifier": "t_address",
                                         "typeString": "address"
@@ -19864,20 +19884,20 @@
                                         "typeString": "address"
                                       }
                                     ],
-                                    "id": 921,
+                                    "id": 923,
                                     "isConstant": false,
                                     "isLValue": false,
                                     "isPure": true,
                                     "lValueRequested": false,
                                     "nodeType": "ElementaryTypeNameExpression",
-                                    "src": "6082:7:2",
+                                    "src": "6098:7:2",
                                     "typeDescriptions": {
                                       "typeIdentifier": "t_type$_t_uint160_$",
                                       "typeString": "type(uint160)"
                                     },
                                     "typeName": "uint160"
                                   },
-                                  "id": 923,
+                                  "id": 925,
                                   "isConstant": false,
                                   "isLValue": false,
                                   "isPure": false,
@@ -19885,7 +19905,7 @@
                                   "lValueRequested": false,
                                   "names": [],
                                   "nodeType": "FunctionCall",
-                                  "src": "6082:14:2",
+                                  "src": "6098:14:2",
                                   "typeDescriptions": {
                                     "typeIdentifier": "t_uint160",
                                     "typeString": "uint160"
@@ -19899,20 +19919,20 @@
                                     "typeString": "uint160"
                                   }
                                 ],
-                                "id": 920,
+                                "id": 922,
                                 "isConstant": false,
                                 "isLValue": false,
                                 "isPure": true,
                                 "lValueRequested": false,
                                 "nodeType": "ElementaryTypeNameExpression",
-                                "src": "6074:7:2",
+                                "src": "6090:7:2",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_type$_t_address_$",
                                   "typeString": "type(address)"
                                 },
                                 "typeName": "address"
                               },
-                              "id": 924,
+                              "id": 926,
                               "isConstant": false,
                               "isLValue": false,
                               "isPure": false,
@@ -19920,7 +19940,7 @@
                               "lValueRequested": false,
                               "names": [],
                               "nodeType": "FunctionCall",
-                              "src": "6074:23:2",
+                              "src": "6090:23:2",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_address_payable",
                                 "typeString": "address payable"
@@ -19934,18 +19954,18 @@
                                 "typeString": "address payable"
                               }
                             ],
-                            "id": 919,
+                            "id": 921,
                             "name": "selfdestruct",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 961,
-                            "src": "6061:12:2",
+                            "referencedDeclaration": 963,
+                            "src": "6077:12:2",
                             "typeDescriptions": {
                               "typeIdentifier": "t_function_selfdestruct_nonpayable$_t_address_payable_$returns$__$",
                               "typeString": "function (address payable)"
                             }
                           },
-                          "id": 925,
+                          "id": 927,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": false,
@@ -19953,15 +19973,15 @@
                           "lValueRequested": false,
                           "names": [],
                           "nodeType": "FunctionCall",
-                          "src": "6061:37:2",
+                          "src": "6077:37:2",
                           "typeDescriptions": {
                             "typeIdentifier": "t_tuple$__$",
                             "typeString": "tuple()"
                           }
                         },
-                        "id": 926,
+                        "id": 928,
                         "nodeType": "ExpressionStatement",
-                        "src": "6061:37:2"
+                        "src": "6077:37:2"
                       }
                     ]
                   }
@@ -19969,10 +19989,30 @@
               ]
             },
             "documentation": null,
-            "id": 930,
+            "id": 932,
             "implemented": true,
             "kind": "function",
-            "modifiers": [],
+            "modifiers": [
+              {
+                "arguments": null,
+                "id": 915,
+                "modifierName": {
+                  "argumentTypes": null,
+                  "id": 914,
+                  "name": "ownerRestricted",
+                  "nodeType": "Identifier",
+                  "overloadedDeclarations": [],
+                  "referencedDeclaration": 310,
+                  "src": "6005:15:2",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_modifier$__$",
+                    "typeString": "modifier ()"
+                  }
+                },
+                "nodeType": "ModifierInvocation",
+                "src": "6005:15:2"
+              }
+            ],
             "name": "destroy",
             "nodeType": "FunctionDefinition",
             "parameters": {
@@ -19982,22 +20022,22 @@
               "src": "6002:2:2"
             },
             "returnParameters": {
-              "id": 914,
+              "id": 916,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "6012:0:2"
+              "src": "6028:0:2"
             },
-            "scope": 938,
-            "src": "5986:131:2",
+            "scope": 940,
+            "src": "5986:147:2",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           },
           {
             "body": {
-              "id": 936,
+              "id": 938,
               "nodeType": "Block",
-              "src": "6153:27:2",
+              "src": "6169:27:2",
               "statements": [
                 {
                   "expression": {
@@ -20005,21 +20045,21 @@
                     "arguments": [],
                     "expression": {
                       "argumentTypes": [],
-                      "id": 933,
+                      "id": 935,
                       "name": "revert",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        958,
-                        959
+                        960,
+                        961
                       ],
-                      "referencedDeclaration": 958,
-                      "src": "6164:6:2",
+                      "referencedDeclaration": 960,
+                      "src": "6180:6:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_revert_pure$__$returns$__$",
                         "typeString": "function () pure"
                       }
                     },
-                    "id": 934,
+                    "id": 936,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -20027,49 +20067,49 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "6164:8:2",
+                    "src": "6180:8:2",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 935,
+                  "id": 937,
                   "nodeType": "ExpressionStatement",
-                  "src": "6164:8:2"
+                  "src": "6180:8:2"
                 }
               ]
             },
             "documentation": null,
-            "id": 937,
+            "id": 939,
             "implemented": true,
             "kind": "fallback",
             "modifiers": [],
             "name": "",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 931,
+              "id": 933,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "6133:2:2"
+              "src": "6149:2:2"
             },
             "returnParameters": {
-              "id": 932,
+              "id": 934,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "6153:0:2"
+              "src": "6169:0:2"
             },
-            "scope": 938,
-            "src": "6125:55:2",
+            "scope": 940,
+            "src": "6141:55:2",
             "stateMutability": "payable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 939,
-        "src": "155:6028:2"
+        "scope": 941,
+        "src": "155:6044:2"
       }
     ],
-    "src": "0:6183:2"
+    "src": "0:6199:2"
   },
   "compiler": {
     "name": "solc",
@@ -20077,7 +20117,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.1",
-  "updatedAt": "2019-02-14T05:25:23.182Z",
+  "updatedAt": "2019-02-14T05:34:54.983Z",
   "devdoc": {
     "methods": {}
   },
