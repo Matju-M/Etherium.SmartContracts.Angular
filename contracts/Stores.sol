@@ -150,9 +150,7 @@ contract Stores {
     }
 
     function destroy() ownerRestricted public {
-        if(msg.sender == owner){
-            selfdestruct(address(uint160(owner)));
-        }
+        selfdestruct(address(uint160(owner)));
     }
 
     function() external payable {
