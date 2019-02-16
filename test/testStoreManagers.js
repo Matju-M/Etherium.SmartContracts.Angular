@@ -19,27 +19,39 @@ contract('StoreManagers', function (accounts) {
         const result = await instance.isOwner({ from: storeOwner });
         assert.equal(result, false);
     });
-    
+
     it("should add only when an owner", async () => {
-        try {
-            truffleAssert.passes(
-                await instance.add(storeOwner, {from: owner}),
-                "The add should work when an owner is calling it.");
-        } catch (e) {
-            assert.fail(null, null, e.message);
-        }
+        await truffleAssert.passes(
+            instance.add(storeOwner, { from: owner }),
+            "the add should work only for contract owner");
+        
+        const managers = (await instance.getAll()).length;
+        assert.equal(managers, 1, "Only one store manager should be saved!");
     });
 
     it("should not add when caller is not the owner", async () => {
-        try {
-            let result = await instance.add(storeOwner, {from: storeOwner});
-            console.log(">>",result)
-            // truffleAssert.passes(
-            //     await instance.add(storeOwner, {from: storeOwner}),
-            //     "The add should only work for contract owner.");
-        } catch (e) {
-            assert.fail(null, null, e.message);
-        }
+        await truffleAssert.fails(
+            instance.add(storeOwner, { from: storeOwner }),
+            truffleAssert.ErrorType.REVERT,
+            null,
+            "The add should only work for contract owner.");
+    });
+
+    it("should have an active store manager", async () => {
+        assert.equal(await instance.isActiveStoreManager(storeOwner), true, "Store Manager should be active");
+        
+        assert.equal(await instance.isActiveStoreManager(owner), false, "Owner should not be Store Manager")
+    });
+
+    it("should remove only when an owner", async () => {
+        let managers = (await instance.getAll()).length;
+        assert.equal(managers, 1, "1 store manager should already be added");
+        await truffleAssert.passes(
+            instance.remove(0, {from: owner}),
+            "the remove should work only for contract owner."
+        )
+        managers = (await instance.getAll()).length;
+        assert.equal(managers, 0, "No store managers should be saved");
     });
 
 });
