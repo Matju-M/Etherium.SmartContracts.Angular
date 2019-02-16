@@ -13,8 +13,7 @@
       ],
       "payable": false,
       "stateMutability": "view",
-      "type": "function",
-      "signature": "0x445df0ac"
+      "type": "function"
     },
     {
       "constant": true,
@@ -28,15 +27,13 @@
       ],
       "payable": false,
       "stateMutability": "view",
-      "type": "function",
-      "signature": "0x8da5cb5b"
+      "type": "function"
     },
     {
       "inputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "constructor",
-      "signature": "constructor"
+      "type": "constructor"
     },
     {
       "constant": false,
@@ -50,8 +47,7 @@
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "function",
-      "signature": "0xfdacd576"
+      "type": "function"
     },
     {
       "constant": false,
@@ -65,8 +61,7 @@
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
-      "type": "function",
-      "signature": "0x0900f010"
+      "type": "function"
     }
   ],
   "bytecode": "0x608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550610314806100606000396000f3fe608060405260043610610062576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680630900f01014610067578063445df0ac146100b85780638da5cb5b146100e3578063fdacd5761461013a575b600080fd5b34801561007357600080fd5b506100b66004803603602081101561008a57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610175565b005b3480156100c457600080fd5b506100cd61025d565b6040518082815260200191505060405180910390f35b3480156100ef57600080fd5b506100f8610263565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561014657600080fd5b506101736004803603602081101561015d57600080fd5b8101908080359060200190929190505050610288565b005b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141561025a5760008190508073ffffffffffffffffffffffffffffffffffffffff1663fdacd5766001546040518263ffffffff167c010000000000000000000000000000000000000000000000000000000002815260040180828152602001915050600060405180830381600087803b15801561024057600080fd5b505af1158015610254573d6000803e3d6000fd5b50505050505b50565b60015481565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614156102e557806001819055505b5056fea165627a7a7230582005168a00acf7b8145c9230edbe8c5bc83caffb5d0d2ad345f0b214afd45810bd0029",
@@ -1371,40 +1366,9 @@
     "name": "solc",
     "version": "0.5.0+commit.1d4f565a.Emscripten.clang"
   },
-  "networks": {
-    "1543515878532": {
-      "events": {},
-      "links": {},
-      "address": "0xb2d89b09d7cf8f7660579fc6c7ea8f6ebac614ac",
-      "transactionHash": "0x21ad48547c0ffbc2e3db917036defd6dac407f63ff5bde987e0d7b79adb67064"
-    },
-    "1549802650534": {
-      "events": {},
-      "links": {},
-      "address": "0xdcc2af2d53a115fbe71c26b09a618ad56ab8679c",
-      "transactionHash": "0x44a76ee54ba23ce650a19a7d5f5a539f4091aa199a4eed29ee87eff3197a2b1c"
-    },
-    "1549814959738": {
-      "events": {},
-      "links": {},
-      "address": "0xe6042703475d0dd1bc2eb564a55f1832c2527171",
-      "transactionHash": "0x1c759ea7e1b68d6b4ab7fdc9525d911fdff7f68690127551c7fe309c0be288e5"
-    },
-    "1549819500890": {
-      "events": {},
-      "links": {},
-      "address": "0xE6042703475D0dd1bC2eB564a55F1832c2527171",
-      "transactionHash": "0x2510931b6933bf97e05df984edbe16f97d58c54345f92bf765ae97a7a8e6a97c"
-    },
-    "1549820356214": {
-      "events": {},
-      "links": {},
-      "address": "0x89Ddb2d0E24D16171B2F80c976D7BB87a537265B",
-      "transactionHash": "0x7c9cbd87a18ce433bd4ba6271d86a2fe2665eeddb827a68384c554b923662590"
-    }
-  },
+  "networks": {},
   "schemaVersion": "3.0.1",
-  "updatedAt": "2019-02-14T05:47:56.137Z",
+  "updatedAt": "2019-02-16T16:44:32.859Z",
   "devdoc": {
     "methods": {}
   },

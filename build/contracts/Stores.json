@@ -20253,15 +20253,15 @@
     "version": "0.5.0+commit.1d4f565a.Emscripten.clang"
   },
   "networks": {
-    "1549820356214": {
+    "1550332467890": {
       "events": {},
       "links": {},
-      "address": "0x4D2F051c18B726ad415Ce053433c598695F1e103",
-      "transactionHash": "0x1bf0a91263015a881ba00957cbbcc5ddbc3a18684e9a3b9fdc9d7c2848901cd2"
+      "address": "0xA8Cf5A353388c180847813011892F6261757D6a7",
+      "transactionHash": "0xb0e465f762e6ab827e7c7982b682e8a53f025f21d3193a8a43520eaffc8e5993"
     }
   },
   "schemaVersion": "3.0.1",
-  "updatedAt": "2019-02-14T05:47:56.145Z",
+  "updatedAt": "2019-02-16T16:44:32.853Z",
   "devdoc": {
     "methods": {}
   },

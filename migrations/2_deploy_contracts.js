@@ -1,5 +1,5 @@
-var StoreManagers = artifacts.require("./StoreManagers.sol");
-var Stores = artifacts.require("./Stores.sol");
+var StoreManagers = artifacts.require("StoreManagers");
+var Stores = artifacts.require("Stores");
 
 module.exports = function (deployer) {
   deployer.deploy(StoreManagers).then(function () {

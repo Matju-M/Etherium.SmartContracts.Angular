@@ -12,7 +12,7 @@ contract StoreManagers {
     }
   
     modifier restricted() {
-        if (msg.sender == owner) _;
+        require(msg.sender == owner); _;
     }
 
     function isOwner() public view returns (bool) {
