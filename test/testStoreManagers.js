@@ -17,26 +17,25 @@ contract('StoreManagers', function (accounts) {
 
     });
 
+    /**
+     * checks that isOwner function returns true only for owner
+     */
     it("should check that when owner, isOwner is true", async () => {
-        const result = await instance.isOwner({ from: owner });
+        let result = await instance.isOwner({ from: owner });
         assert.equal(result, true);
-    });
 
-    it("should check that when not owner, isOwner is false", async () => {
-        const result = await instance.isOwner({ from: storeManager });
+        result = await instance.isOwner({ from: storeManager });
         assert.equal(result, false);
     });
 
+    /**
+     * checks that a store manager can be added only by owner
+     */
     it("should add only when an owner", async () => {
         await truffleAssert.passes(
             instance.add(storeManager, { from: owner }),
             "the add should work only for contract owner");
 
-        const managers = (await instance.getAll()).length;
-        assert.equal(managers, 1, "Only one store manager should be saved!");
-    });
-
-    it("should not add when caller is not the owner", async () => {
         await truffleAssert.fails(
             instance.add(storeManager, { from: storeManager }),
             truffleAssert.ErrorType.REVERT,
@@ -44,15 +43,39 @@ contract('StoreManagers', function (accounts) {
             "The add should only work for contract owner.");
     });
 
+    /**
+     * checks that only 1 store manager is saved, with the store manager account
+     */
+    it("should have only 1 store manager saved", async () => {
+        const managers = await instance.getAll();
+
+        assert.equal(managers[0], storeManager, "Store manager account does not match");
+        assert.equal(managers.length, 1, "Only one store manager should be saved!");
+    });
+
+    /**
+     * Checks if the passed address is an active store manager
+     */
     it("should have an active store manager", async () => {
         assert.equal(await instance.isActiveStoreManager(storeManager), true, "Store Manager should be active");
 
         assert.equal(await instance.isActiveStoreManager(owner), false, "Owner should not be Store Manager")
     });
 
+    /**
+     *  checks that a store manager can be removed only by the owner
+     */
     it("should remove only when an owner", async () => {
         let managers = (await instance.getAll()).length;
         assert.equal(managers, 1, "1 store manager should already be added");
+
+        await truffleAssert.fails(
+            instance.remove(0, { from: storeManager }),
+            truffleAssert.ErrorType.REVERT,
+            null,
+            "the remove should work only for contract owner."
+        )
+
         await truffleAssert.passes(
             instance.remove(0, { from: owner }),
             "the remove should work only for contract owner."
