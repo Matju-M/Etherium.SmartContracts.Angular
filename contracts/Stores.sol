@@ -151,13 +151,16 @@ contract Stores {
         uint64 code, 
         uint16 quantity
     ) public payable {
+        require(storeCode >= 0, "storeCode should be greated than 0");
         require(code >= 0, "code should be greated than 0");
+        require(quantity >= 0, "quantity should be 0 or more");
+
         require(storeItems[storeCode][code].available == true, "item should be available");
         require(storeItems[storeCode][code].exist, "item with this code should already exist to update");
         require(storeItems[storeCode][code].quantity >= quantity, "stock quantity should be more");
-        require(quantity >= 0, "quantity should be 0 or more");
-        
+
         withdrawFunds(storeCode, code, quantity);
+        
         storeItems[storeCode][code].quantity = storeItems[storeCode][code].quantity - quantity;
 
         if(storeItems[storeCode][code].quantity == 0){

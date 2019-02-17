@@ -34,7 +34,10 @@ The contract self destruction pattern is used to transfer funds to the owner ins
     } 
 ```
 
+
+
+
 # Further Improvements
 
 ## Factory Contract pattern 
-This implementation could be used to create the store contracts dynamically, thus will have their own funds, instead of having them combined.
+This implementation might be used to create the store contracts dynamically, thus will have their own funds, instead of having them combined.
