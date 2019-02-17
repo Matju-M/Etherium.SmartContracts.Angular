@@ -30,8 +30,6 @@ contract Stores {
     StoreManagersInterface storeManagers;
     address storeManagersAddress;
 
-    event log(address sender, bool found, string text);
-
     constructor(address storeManagersContractAddress) public { 
         owner = msg.sender;
 
@@ -153,7 +151,7 @@ contract Stores {
         uint64 code, 
         uint16 quantity
     ) public payable {
-         require(code >= 0, "code should be greated than 0");
+        require(code >= 0, "code should be greated than 0");
         require(storeItems[storeCode][code].available == true, "item should be available");
         require(storeItems[storeCode][code].exist, "item with this code should already exist to update");
         require(storeItems[storeCode][code].quantity >= quantity, "stock quantity should be more");
