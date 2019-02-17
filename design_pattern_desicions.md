@@ -34,9 +34,6 @@ The contract self destruction pattern is used to transfer funds to the owner ins
     } 
 ```
 
-
-
-
 # Further Improvements
 
 ## Factory Contract pattern 
