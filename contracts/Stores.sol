@@ -1,8 +1,6 @@
 pragma solidity ^0.5.0;
 
-interface StoreManagersInterface {
-    function isActiveStoreManager(address storeManager) external view returns (bool);
-}
+import "./StoreManagersInterface.sol";
 
 contract Stores { 
     address owner;
@@ -30,11 +28,15 @@ contract Stores {
     mapping(uint16 => mapping(uint64 => StoreItem)) public storeItems;
 
     StoreManagersInterface storeManagers;
+    address storeManagersAddress;
+
+    event log(address sender, bool found, string text);
 
     constructor(address storeManagersContractAddress) public { 
         owner = msg.sender;
 
         require(storeManagersContractAddress != address(0));
+        storeManagersAddress = storeManagersContractAddress;
         storeManagers = StoreManagersInterface(storeManagersContractAddress);
     }
 
@@ -54,7 +56,12 @@ contract Stores {
         return stores[storeCode].itemCodes;
     }
 
-    function add(uint16 storeCode, string memory name, bool active, uint256 balance) restricted public payable {
+    function add(
+        uint16 storeCode, 
+        string memory name, 
+        bool active, 
+        uint256 balance
+    ) restricted public payable {
         require(storeCode >= 0);
         require(keccak256(abi.encode(stores[storeCode].name)) > 0, "item with this code already exists");
         require(keccak256(abi.encode(name)) > 0, "image should not be left empty");
@@ -65,7 +72,12 @@ contract Stores {
         stores[storeCode].balance = balance;
     }
 
-    function update(uint16 storeCode, string memory name, bool active, uint256 balance) restricted public payable { 
+    function update(
+        uint16 storeCode, 
+        string memory name, 
+        bool active, 
+        uint256 balance
+    ) restricted public payable { 
         require(storeCode >= 0);
         require(keccak256(abi.encode(stores[storeCode].name)) > 0, "item should already be available");
         require(keccak256(abi.encode(name)) > 0, "image should not be left empty");
@@ -75,7 +87,15 @@ contract Stores {
         stores[storeCode].balance = balance;
     }
 
-    function addItem(uint16 storeCode, uint64 code, string memory image, string memory title, uint256 price, uint16 quantity, bool available) restricted public payable {
+    function addItem(
+        uint16 storeCode, 
+        uint64 code, 
+        string memory image, 
+        string memory title,
+        uint256 price, 
+        uint16 quantity, 
+        bool available
+    ) restricted public payable {
         
         require(storeCode >= 0);
         require(code >= 0);
@@ -95,7 +115,15 @@ contract Stores {
         storeItems[storeCode][code].exist = true;
     }
 
-    function updateItem(uint16 storeCode, uint64 code, string memory image, string memory title, uint256 price, uint16 quantity, bool available) restricted public payable {
+    function updateItem(
+        uint16 storeCode, 
+        uint64 code, 
+        string memory image, 
+        string memory title, 
+        uint256 price, 
+        uint16 quantity, 
+        bool available
+    ) restricted public payable {
         
         require(code >= 0, "code should be greated than 0");
         require(storeItems[storeCode][code].exist, "item with this code should already exist to update");
@@ -116,11 +144,15 @@ contract Stores {
         storeItems[storeCode][code].available = available;
     }
 
-    function getBalance() public view returns (uint256) { 
+    function getBalance() ownerRestricted public view returns (uint256) { 
         return address(this).balance;
     }
 
-    function buyItem(uint16 storeCode, uint64 code, uint16 quantity) public payable {
+    function buyItem(
+        uint16 storeCode, 
+        uint64 code, 
+        uint16 quantity
+    ) public payable {
          require(code >= 0, "code should be greated than 0");
         require(storeItems[storeCode][code].available == true, "item should be available");
         require(storeItems[storeCode][code].exist, "item with this code should already exist to update");
@@ -135,7 +167,11 @@ contract Stores {
         }
     }
 
-     function withdrawFunds(uint16 storeCode, uint64 code, uint16 quantity) private {
+     function withdrawFunds(
+        uint16 storeCode, 
+        uint64 code, 
+        uint16 quantity
+    ) private {
         uint256 outstandingBalance = storeItems[storeCode][code].price * quantity;
 
         // address payable payableOwner = address(uint160(owner));       

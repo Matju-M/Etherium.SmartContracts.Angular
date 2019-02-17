@@ -1,6 +1,8 @@
 pragma solidity ^0.5.0;
 
-contract StoreManagers { 
+import "./StoreManagersInterface.sol";
+
+contract StoreManagers is StoreManagersInterface { 
 
     address owner;
     
