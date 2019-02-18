@@ -4,7 +4,6 @@ import "./StoreManagersInterface.sol";
 
 contract Stores { 
     address owner;
-
     address funds;
 
     struct StoreItem {
@@ -62,7 +61,8 @@ contract Stores {
     ) restricted public payable {
         require(storeCode >= 0);
         require(keccak256(abi.encode(stores[storeCode].name)) > 0, "item with this code already exists");
-        require(keccak256(abi.encode(name)) > 0, "image should not be left empty");
+        require(keccak256(abi.encode(name)) > 0, "name should not be left empty");
+        require(balance >= 0, "balance should be greater than 0");
 
         storeCodes.push(storeCode);
         stores[storeCode].name = name;
@@ -79,6 +79,7 @@ contract Stores {
         require(storeCode >= 0);
         require(keccak256(abi.encode(stores[storeCode].name)) > 0, "item should already be available");
         require(keccak256(abi.encode(name)) > 0, "image should not be left empty");
+        require(balance >= 0, "balance should be greater than 0");
 
         stores[storeCode].name = name;
         stores[storeCode].active = active;
