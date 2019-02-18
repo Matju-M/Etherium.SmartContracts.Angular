@@ -1,4 +1,9 @@
 img {
     width:100px;
     height:100px;
+    margin-right: 2px;
+}
+
+mat-grid-tile button {
+    margin: 2px;
 }
