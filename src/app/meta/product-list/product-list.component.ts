@@ -77,7 +77,7 @@ export class ProductListComponent implements OnInit {
         this.storeItems = [];
 
         const deployed = await this.StoreItemsContract.deployed();
-        const itemCodes = _.map(await deployed.getAllItemCodes(1), x => x.toNumber());
+        const itemCodes = _.map(await deployed.getAllItemCodes(this.selectedStoreCode), x => x.toNumber());
 
         _.forEach(itemCodes, async code => {
             const [image, title, price, quantity, available] = await deployed.storeItems(this.selectedStoreCode, code);

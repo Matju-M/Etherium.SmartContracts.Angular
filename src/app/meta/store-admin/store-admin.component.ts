@@ -22,7 +22,7 @@ export class StoreAdminComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    
+
     this.web3Service.artifactsToContract(storemanager_artifacts)
       .then(
         async contract => {
