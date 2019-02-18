@@ -20,6 +20,7 @@ contract Stores {
         bool active;
         uint256 balance;
         uint64[] itemCodes;
+        bool exist;
     }   
 
     uint16[] storeCodes;
@@ -60,7 +61,7 @@ contract Stores {
         uint256 balance
     ) restricted public payable {
         require(storeCode >= 0);
-        require(keccak256(abi.encode(stores[storeCode].name)) > 0, "item with this code already exists");
+        require(!stores[storeCode].exist, "item with this code already exists");
         require(keccak256(abi.encode(name)) > 0, "name should not be left empty");
         require(balance >= 0, "balance should be greater than 0");
 
@@ -68,6 +69,7 @@ contract Stores {
         stores[storeCode].name = name;
         stores[storeCode].active = active;
         stores[storeCode].balance = balance;
+        stores[storeCode].exist = true;
     }
 
     function update(
@@ -77,7 +79,7 @@ contract Stores {
         uint256 balance
     ) restricted public payable { 
         require(storeCode >= 0);
-        require(keccak256(abi.encode(stores[storeCode].name)) > 0, "item should already be available");
+        require(stores[storeCode].exist, "item should already be available");
         require(keccak256(abi.encode(name)) > 0, "image should not be left empty");
         require(balance >= 0, "balance should be greater than 0");
 
