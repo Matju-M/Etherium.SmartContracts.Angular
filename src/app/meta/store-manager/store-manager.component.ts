@@ -97,8 +97,6 @@ export class StoreManagerComponent implements OnInit {
         const deployedStores = await this.StoresContract.deployed();
         const storesCode = _.map(await deployedStores.getAllStoreCodes(), x => x.toNumber());
 
-        this.balance = this.web3Service.fromWei((await deployedStores.getBalance()).toString(), 'ether');
-
         this.storesList = [];
         _.forEach(storesCode, async code => {
             const [name, active, balance] = await deployedStores.stores(code);

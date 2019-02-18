@@ -46,7 +46,7 @@ contract Stores {
         require(owner == msg.sender); _;
     }
 
-    function getAllStoreCodes() public view returns ( uint16[] memory) {
+    function getAllStoreCodes() public view returns (uint16[] memory) {
         return storeCodes;
     }
 

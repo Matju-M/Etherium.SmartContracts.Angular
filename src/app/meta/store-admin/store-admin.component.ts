@@ -1,9 +1,7 @@
-
 import _ from 'lodash';
 import { OnInit, Component } from '@angular/core';
 
 import storemanager_artifacts from '../../../../build/contracts/StoreManagers.json';
-
 import { Web3Service } from '../../util/web3.service';
 
 @Component({
@@ -24,7 +22,7 @@ export class StoreAdminComponent implements OnInit {
   }
 
   ngOnInit(): void {
-
+    
     this.web3Service.artifactsToContract(storemanager_artifacts)
       .then(
         async contract => {
