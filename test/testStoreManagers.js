@@ -63,6 +63,23 @@ contract('StoreManagers', function (accounts) {
     });
 
     /**
+     * updates a store manager, checks value in mapping
+     */
+    it("should update a store manager", async () => {
+        await truffleAssert.passes(
+            instance.update(storeManager, false, { from: owner }),
+            "the update should work only for contract owner");
+
+        await truffleAssert.fails(
+            instance.update(storeManager, false, { from: storeManager }),
+            truffleAssert.ErrorType.REVERT,
+            null,
+            "the update should not work for store manager");
+        
+            assert.equal(await instance.isActiveStoreManager(storeManager), false, "Store Manager should be not be active");
+    })
+
+    /**
      *  checks that a store manager can be removed only by the owner
      */
     it("should remove only when an owner", async () => {
