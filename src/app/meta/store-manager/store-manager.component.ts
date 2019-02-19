@@ -182,4 +182,3 @@ export class StoreManagerComponent implements OnInit {
         return item.code;
     }
 }
-

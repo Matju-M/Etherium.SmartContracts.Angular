@@ -13,6 +13,7 @@ Links to Documentation:
 
 [Avoiding Common Attacks](avoiding_common_attacks.md)
 
+[GUI Implementation](gui_implementation.md)
 
 # Setup
 
