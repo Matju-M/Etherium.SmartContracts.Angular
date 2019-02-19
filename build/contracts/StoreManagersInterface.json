@@ -31,14 +31,14 @@
     "absolutePath": "/C/PersonalGit/Etherium.SmartContracts.Angular/contracts/StoreManagersInterface.sol",
     "exportedSymbols": {
       "StoreManagersInterface": [
-        224
+        240
       ]
     },
-    "id": 225,
+    "id": 241,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 216,
+        "id": 232,
         "literals": [
           "solidity",
           "^",
@@ -54,9 +54,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 224,
+        "id": 240,
         "linearizedBaseContracts": [
-          224
+          240
         ],
         "name": "StoreManagersInterface",
         "nodeType": "ContractDefinition",
@@ -64,22 +64,22 @@
           {
             "body": null,
             "documentation": null,
-            "id": 223,
+            "id": 239,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "isActiveStoreManager",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 219,
+              "id": 235,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 218,
+                  "id": 234,
                   "name": "storeManager",
                   "nodeType": "VariableDeclaration",
-                  "scope": 223,
+                  "scope": 239,
                   "src": "97:20:2",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -88,7 +88,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 217,
+                    "id": 233,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "97:7:2",
@@ -105,15 +105,15 @@
               "src": "96:22:2"
             },
             "returnParameters": {
-              "id": 222,
+              "id": 238,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 221,
+                  "id": 237,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 223,
+                  "scope": 239,
                   "src": "142:4:2",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -122,7 +122,7 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 220,
+                    "id": 236,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
                     "src": "142:4:2",
@@ -137,14 +137,14 @@
               ],
               "src": "141:6:2"
             },
-            "scope": 224,
+            "scope": 240,
             "src": "67:81:2",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 225,
+        "scope": 241,
         "src": "27:124:2"
       }
     ],
@@ -154,14 +154,14 @@
     "absolutePath": "/C/PersonalGit/Etherium.SmartContracts.Angular/contracts/StoreManagersInterface.sol",
     "exportedSymbols": {
       "StoreManagersInterface": [
-        224
+        240
       ]
     },
-    "id": 225,
+    "id": 241,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 216,
+        "id": 232,
         "literals": [
           "solidity",
           "^",
@@ -177,9 +177,9 @@
         "contractKind": "interface",
         "documentation": null,
         "fullyImplemented": false,
-        "id": 224,
+        "id": 240,
         "linearizedBaseContracts": [
-          224
+          240
         ],
         "name": "StoreManagersInterface",
         "nodeType": "ContractDefinition",
@@ -187,22 +187,22 @@
           {
             "body": null,
             "documentation": null,
-            "id": 223,
+            "id": 239,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "isActiveStoreManager",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 219,
+              "id": 235,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 218,
+                  "id": 234,
                   "name": "storeManager",
                   "nodeType": "VariableDeclaration",
-                  "scope": 223,
+                  "scope": 239,
                   "src": "97:20:2",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -211,7 +211,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 217,
+                    "id": 233,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "97:7:2",
@@ -228,15 +228,15 @@
               "src": "96:22:2"
             },
             "returnParameters": {
-              "id": 222,
+              "id": 238,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 221,
+                  "id": 237,
                   "name": "",
                   "nodeType": "VariableDeclaration",
-                  "scope": 223,
+                  "scope": 239,
                   "src": "142:4:2",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -245,7 +245,7 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 220,
+                    "id": 236,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
                     "src": "142:4:2",
@@ -260,14 +260,14 @@
               ],
               "src": "141:6:2"
             },
-            "scope": 224,
+            "scope": 240,
             "src": "67:81:2",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 225,
+        "scope": 241,
         "src": "27:124:2"
       }
     ],
@@ -279,7 +279,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.2",
-  "updatedAt": "2019-02-18T18:31:37.614Z",
+  "updatedAt": "2019-02-18T19:06:16.399Z",
   "devdoc": {
     "methods": {}
   },

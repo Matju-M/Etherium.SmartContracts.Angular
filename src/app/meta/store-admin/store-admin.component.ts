@@ -39,6 +39,7 @@ export class StoreAdminComponent implements OnInit {
     });
   }
 
+  // This functions determines if the current account is the owner.
   async checkForOwner() {
     if (!this.StoreManagersContract) {
       return;
@@ -57,6 +58,7 @@ export class StoreAdminComponent implements OnInit {
     this.storeManagers = await deployed.getAll();
   }
 
+  // checks if the manager in the text box is already in the storemanagers array, and sends a request to add it.
   async addManager() {
     if (_.indexOf(this.storeManagers, this.storeManagerAddress) > -1) {
       return;
@@ -67,6 +69,7 @@ export class StoreAdminComponent implements OnInit {
       .catch(e => console.log(e));
   }
 
+  // checks if the manager is in the list and sends a request to remove it.
   async removeManager() {
     const index = _.indexOf(this.storeManagers, this.storeManagerAddress);
     const deployed = await this.StoreManagersContract.deployed();
@@ -79,6 +82,7 @@ export class StoreAdminComponent implements OnInit {
     }
   }
 
+  // used for ngFor functionality in the template so that it won't remove the list and readd it again.
   trackById(_index: number, id: string): string {
     return id;
   }

@@ -23,6 +23,7 @@ export class StoreManagerComponent implements OnInit {
     balance: string;
     storesList: Store[];
 
+    // initial model to insert a new store
     store: Store = {
         active: true,
         balance: 1,
@@ -30,6 +31,7 @@ export class StoreManagerComponent implements OnInit {
         name: 'test'
     };
 
+    // initial model to insert a new store item
     storeItem: StoreItem = {
         storeCode: 1,
         code: 1234,
@@ -45,6 +47,7 @@ export class StoreManagerComponent implements OnInit {
         private productService: ProductService) {
     }
 
+    // checks if the current account is a store owner or not
     get isStoreOwner() {
         return _.indexOf(this.storeManagers, this.currentAccount) > -1;
     }
@@ -80,6 +83,7 @@ export class StoreManagerComponent implements OnInit {
         });
     }
 
+    // checks if the current code is the selected store
     isStoreSelected(code: number): boolean {
         if (!this.productService.selectedStore.value) {
             return false;
@@ -88,6 +92,7 @@ export class StoreManagerComponent implements OnInit {
         return code === this.productService.selectedStore.value.code;
     }
 
+    // function to select a store
     async selectStore(store: Store) {
         this.productService.selectedStore.next(store);
         this.storeItem.storeCode = store.code;
@@ -95,9 +100,12 @@ export class StoreManagerComponent implements OnInit {
 
     async getStores() {
         const deployedStores = await this.StoresContract.deployed();
+        // get all store codes
         const storesCode = _.map(await deployedStores.getAllStoreCodes(), x => x.toNumber());
 
         this.storesList = [];
+
+        // iterate over each store code in the mapping and get it's data
         _.forEach(storesCode, async code => {
             const [name, active, balance] = await deployedStores.stores(code);
 
@@ -114,6 +122,7 @@ export class StoreManagerComponent implements OnInit {
         });
     }
 
+    // send a request to add a new store
     async addStore() {
         const deployed = await this.StoresContract.deployed();
         const { code, name, active, balance } = this.store;
@@ -121,6 +130,7 @@ export class StoreManagerComponent implements OnInit {
         await deployed.add.sendTransaction(+code, name, active, convertToWei, { from: this.currentAccount }).catch(e => console.log(e));
     }
 
+    // send a request to update a new store
     async updateStore() {
         const deployed = await this.StoresContract.deployed();
         const { code, name, active, balance } = this.store;
@@ -128,12 +138,15 @@ export class StoreManagerComponent implements OnInit {
         await deployed.update(code, name, active, convertToWei, { from: this.currentAccount }).catch(e => console.log(e));
     }
 
+
     async addItem() {
         const { storeCode, available, quantity, price, image, code, title } = this.storeItem;
         const deployed = await this.StoresContract.deployed();
 
+        // convert current price from ether to wei
         const convertToWei = this.web3Service.toWei(price.toString(), 'ether');
 
+        // send a reques to add an item
         await deployed.addItem(
             storeCode,
             code,
@@ -152,6 +165,7 @@ export class StoreManagerComponent implements OnInit {
 
         const convertToWei = this.web3Service.toWei(price.toString(), 'ether');
 
+        // send a request to update an item
         await deployed.updateItem(
             storeCode,
             code,

@@ -7,6 +7,12 @@ Shoppers then can visit the stores and purchase goods.
 
 Frontend application is based on [angular-truffle-box](https://truffleframework.com/boxes/angular-truffle-box)
 
+Links to Documentation:
+
+[Design Patterns](design_pattern_desicions.md)
+
+[Avoiding Common Attacks](avoiding_common_attacks.md)
+
 
 # Setup
 

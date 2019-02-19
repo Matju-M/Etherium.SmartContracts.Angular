@@ -38,22 +38,27 @@ export class Web3Service {
     setInterval(() => this.refreshAccounts(), 100);
   }
 
+  // returns the web3 provider
   public getWeb3Provider(): Web3 {
     return this.web3;
   }
 
+  // util function to handle conversion from ascii to hex.
   public toAscii(hex: string): string {
     return this.getWeb3Provider().utils.toAscii(hex);
   }
 
+  // util function to convert any ether unit to wei
   public toWei(value: string, unit: Unit): string {
     return this.getWeb3Provider().utils.toWei(value, unit);
   }
 
+  // util function to convert from wei to a ether unit
   public fromWei(value: string, unit: Unit) {
     return this.getWeb3Provider().utils.fromWei(value, unit);
   }
 
+  // function to get the contract from the json artifact
   public async artifactsToContract(artifacts) {
     if (!this.web3) {
       const delay = new Promise(resolve => setTimeout(resolve, 100));
@@ -67,6 +72,7 @@ export class Web3Service {
 
   }
 
+  // a promise that will callback every time there are changes to the blockchain
   public async detectChanges(callback: Function) {
     if (!this.web3) {
       const delay = new Promise(resolve => setTimeout(resolve, 100));
@@ -77,6 +83,7 @@ export class Web3Service {
     return this.web3.eth.subscribe('newBlockHeaders', callback);
   }
 
+  // a function to refresh and return new accounts.
   private refreshAccounts() {
     this.web3.eth.getAccounts((err, accs) => {
       console.log('Refreshing accounts');

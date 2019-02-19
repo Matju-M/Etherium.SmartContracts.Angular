@@ -40,6 +40,11 @@ contract StoreManagers is StoreManagersInterface {
         activeStoreManagers[manager] = true;
     }
 
+    // restricted access to remove set active to false;
+    function update(address manager, bool status) restricted public payable {
+        activeStoreManagers[manager] = status;
+    }
+
     // restricted access to remove a store manager from array and mapping
     function remove(uint index) restricted public payable {
         address storeManagerAddress = storeManagers[index];
